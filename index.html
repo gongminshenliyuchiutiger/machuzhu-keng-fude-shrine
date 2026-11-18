@@ -179,15 +179,20 @@
         </div>
         <div class="form-group">
           <label for="wish-name"><i class="fa-solid fa-user"></i> 祈福人（選填）</label>
-          <input type="text" id="wish-name" maxlength="12" placeholder="例如：雙中學子" />
+          <input type="text" id="wish-name" maxlength="12" placeholder="例如：快樂鯉魚" />
         </div>
         <div class="form-group">
           <label for="wish-text"><i class="fa-solid fa-pen-fancy"></i> 祈福心願</label>
           <textarea id="wish-text" rows="3" maxlength="50" placeholder="請輸入您的心願（例如：祝大家考試順利、健康快樂）"></textarea>
         </div>
-        <button id="btn-submit-pray" class="submit-pray-btn">
-          <i class="fa-solid fa-paper-plane"></i> 誠心奉香掛卡
-        </button>
+        <div class="pray-modal-actions">
+          <button type="button" id="btn-export-pray-card" class="secondary-btn gold-outline-btn">
+            <i class="fa-solid fa-image"></i> 匯出祈福小卡圖片
+          </button>
+          <button id="btn-submit-pray" class="submit-pray-btn">
+            <i class="fa-solid fa-paper-plane"></i> 誠心奉香掛卡
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -196,7 +201,7 @@
   <div id="bwei-modal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3><span class="bwei-icon-pair" aria-hidden="true"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-moon flip"></i></span> 向雙中土地公擲筊問事</h3>
+        <h3><span class="bwei-icon-pair" aria-hidden="true"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-moon flip"></i></span> 向土地公婆擲筊問事</h3>
         <button id="btn-close-bwei" class="icon-only-btn">
           <i class="fa-solid fa-xmark"></i>
         </button>
@@ -299,7 +304,7 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          點擊任一祈福卡可<strong>放大檢視／編輯／刪除</strong>；桌機可直接<strong>拖曳卡片更換位置</strong>，手機可點選「換位模式」依序點兩格互換，3D 祈福牆會即時同步！
+          點擊任一祈福卡可<strong>放大檢視／編輯／刪除／匯出正方形圖片</strong>；桌機可直接<strong>拖曳卡片更換位置</strong>，手機可點選「換位模式」依序點兩格互換，3D 祈福牆會即時同步！
         </p>
         <div class="wall-toolbar">
           <button type="button" id="btn-toggle-swap" class="secondary-btn compact">
@@ -365,11 +370,16 @@
         </div>
         <div class="form-group">
           <label for="zoom-name-input"><i class="fa-solid fa-user"></i> 祈福人（選填）</label>
-          <input type="text" id="zoom-name-input" maxlength="12" placeholder="例如：雙中學子" />
+          <input type="text" id="zoom-name-input" maxlength="12" placeholder="例如：快樂鯉魚" />
         </div>
         <div class="form-group">
           <label for="zoom-wish-input"><i class="fa-solid fa-pen-fancy"></i> 祈福心願</label>
           <textarea id="zoom-wish-input" rows="3" maxlength="50" placeholder="請輸入您的祈福心願"></textarea>
+        </div>
+        <div class="zoom-export-bar">
+          <button type="button" id="btn-export-card-image" class="export-card-img-btn">
+            <i class="fa-solid fa-download"></i> 匯出祈福小卡圖片
+          </button>
         </div>
         <div class="offering-footer-actions">
           <button type="button" id="btn-delete-card" class="secondary-btn danger-btn">

@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const prayModal = document.getElementById('pray-modal');
   const btnClosePray = document.getElementById('btn-close-pray');
   const btnSubmitPray = document.getElementById('btn-submit-pray');
+  const btnExportPrayCard = document.getElementById('btn-export-pray-card');
   const wishNameInput = document.getElementById('wish-name');
   const wishTextInput = document.getElementById('wish-text');
   const wishChips = document.querySelectorAll('.wish-chip');
@@ -232,6 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
     showToast('已誠心奉香！您的水滴祈福卡已掛上 3D 祈福牆');
   });
 
+  if (btnExportPrayCard) {
+    btnExportPrayCard.addEventListener('click', () => {
+      const name = wishNameInput.value.trim();
+      const wish = wishTextInput.value.trim() || '平安順心・學業進步';
+      exportSquareBlessingCardImage({
+        name,
+        wish,
+        slotLabel: '誠心祈福御守'
+      });
+    });
+  }
+
   function showToast(message) {
     toastText.textContent = message;
     toastMsg.classList.remove('hidden');
@@ -260,11 +273,454 @@ document.addEventListener('DOMContentLoaded', () => {
   const zoomWishInput = document.getElementById('zoom-wish-input');
   const btnSaveCard = document.getElementById('btn-save-card');
   const btnDeleteCard = document.getElementById('btn-delete-card');
+  const btnExportCardImage = document.getElementById('btn-export-card-image');
 
   let activeZoomSlotIndex = null;
   let swapMode = false;
   let swapSourceIndex = null;
   let dragSourceIndex = null;
+
+  // 繪製並匯出 1080x1080 正方形單張祈福小卡 PNG 圖片
+  function exportSquareBlessingCardImage({ name = '', wish = '', slotLabel = '誠心祈福御守' }) {
+    const size = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    const cleanName = (name || '').trim();
+    const cleanWish = (wish || '').trim() || '平安順心・萬事如意';
+    const SERIF_FONT = '"Noto Serif TC", serif';
+
+    // 像素級精準垂直與水平置中文字繪製工具
+    function drawCenteredText(c, text, cx, cy) {
+      c.save();
+      c.textAlign = 'center';
+      c.textBaseline = 'alphabetic';
+      const m = c.measureText(text);
+      const ascent = m.actualBoundingBoxAscent !== undefined ? m.actualBoundingBoxAscent : 0;
+      const descent = m.actualBoundingBoxDescent !== undefined ? m.actualBoundingBoxDescent : 0;
+      if (ascent || descent) {
+        c.fillText(text, cx, cy + (ascent - descent) / 2);
+      } else {
+        c.textBaseline = 'middle';
+        c.fillText(text, cx, cy);
+      }
+      c.restore();
+    }
+
+    // 1. 背景漸層（典雅深邃祈福夜空與暖金光暈）
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, size);
+    bgGrad.addColorStop(0, '#0d1829');
+    bgGrad.addColorStop(0.5, '#152642');
+    bgGrad.addColorStop(1, '#1b3556');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, size, size);
+
+    // 中心神聖暖金柔光
+    const glowGrad = ctx.createRadialGradient(size / 2, 520, 40, size / 2, 520, 520);
+    glowGrad.addColorStop(0, 'rgba(250, 204, 21, 0.24)');
+    glowGrad.addColorStop(0.55, 'rgba(56, 189, 248, 0.12)');
+    glowGrad.addColorStop(1, 'rgba(13, 24, 41, 0)');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, 0, size, size);
+
+    // 底部雙溪山巒層疊剪影
+    ctx.save();
+    ctx.fillStyle = 'rgba(20, 45, 58, 0.55)';
+    ctx.beginPath();
+    ctx.moveTo(0, 880);
+    ctx.quadraticCurveTo(270, 770, 560, 855);
+    ctx.quadraticCurveTo(830, 750, 1080, 840);
+    ctx.lineTo(1080, 1080);
+    ctx.lineTo(0, 1080);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(14, 30, 46, 0.78)';
+    ctx.beginPath();
+    ctx.moveTo(0, 930);
+    ctx.quadraticCurveTo(340, 845, 680, 920);
+    ctx.quadraticCurveTo(900, 865, 1080, 915);
+    ctx.lineTo(1080, 1080);
+    ctx.lineTo(0, 1080);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // 祈福星火光點（固定種子座標讓每次輸出穩定美觀）
+    const sparkles = [
+      [130, 180, 3.5], [950, 195, 4], [180, 340, 2.5], [910, 360, 3],
+      [115, 540, 4.2], [965, 520, 3.8], [165, 720, 3], [920, 710, 4.5],
+      [245, 250, 2.2], [835, 265, 2.8], [220, 820, 3.2], [860, 835, 3.2],
+      [330, 165, 2], [750, 160, 2.5], [140, 890, 2.6], [940, 895, 2.6]
+    ];
+    sparkles.forEach(([sx, sy, sr]) => {
+      const spGrad = ctx.createRadialGradient(sx, sy, 0.5, sx, sy, sr * 4);
+      spGrad.addColorStop(0, 'rgba(255, 235, 160, 0.95)');
+      spGrad.addColorStop(0.4, 'rgba(244, 196, 93, 0.45)');
+      spGrad.addColorStop(1, 'rgba(244, 196, 93, 0)');
+      ctx.fillStyle = spGrad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr * 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // 2. 古典描金雙層邊框與四角裝飾
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244, 196, 93, 0.65)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(28, 28, size - 56, size - 56);
+
+    ctx.strokeStyle = 'rgba(255, 225, 141, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(42, 42, size - 84, size - 84);
+
+    // 四角中式回紋角花
+    const corners = [
+      [28, 28, 1, 1],
+      [size - 28, 28, -1, 1],
+      [28, size - 28, 1, -1],
+      [size - 28, size - 28, -1, -1]
+    ];
+    ctx.strokeStyle = '#f4c45d';
+    ctx.lineWidth = 4;
+    corners.forEach(([cx, cy, dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy + dy * 48);
+      ctx.lineTo(cx + dx * 28, cy + dy * 48);
+      ctx.lineTo(cx + dx * 28, cy + dy * 28);
+      ctx.lineTo(cx + dx * 48, cy + dy * 28);
+      ctx.lineTo(cx + dx * 48, cy);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    // 3. 頂部學校與古蹟資訊標題（全採用思源宋體襯線字體並精準置中）
+    ctx.save();
+    ctx.font = `bold 22px ${SERIF_FONT}`;
+    const topBadgeText = '新北市立雙溪高中｜光緒十八年 (1892)';
+    const topBadgeW = Math.max(500, Math.ceil(ctx.measureText(topBadgeText).width) + 64);
+    const topBadgeX = (size - topBadgeW) / 2;
+    const topBadgeY = 58;
+    const topBadgeH = 44;
+
+    ctx.fillStyle = 'rgba(200, 50, 40, 0.88)';
+    ctx.strokeStyle = '#f4c45d';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(topBadgeX, topBadgeY, topBadgeW, topBadgeH, topBadgeH / 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffe18d';
+    drawCenteredText(ctx, topBadgeText, size / 2, topBadgeY + topBadgeH / 2);
+
+    ctx.fillStyle = '#ffe8a3';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+    ctx.shadowBlur = 10;
+    ctx.font = `900 44px ${SERIF_FONT}`;
+    drawCenteredText(ctx, '蔴竹坑福德祠・祈福小卡', size / 2, 142);
+    ctx.restore();
+
+    // 4. 繪製頂部祈福紅繩與雙中藍色水滴祈福卡本體
+    ctx.save();
+    // 祈福紅繩與雙結
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(size / 2, 168);
+    ctx.lineTo(size / 2, 212);
+    ctx.stroke();
+
+    // 紅繩蝴蝶結耳
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.ellipse(size / 2 - 20, 192, 16, 8, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(size / 2 + 20, 192, 16, 8, 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 金色扣環
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(size / 2, 200, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 水滴形卡片路徑定義
+    function traceDropPath(c) {
+      c.beginPath();
+      c.moveTo(540, 196);
+      c.bezierCurveTo(790, 425, 868, 645, 795, 790);
+      c.bezierCurveTo(725, 928, 355, 928, 285, 790);
+      c.bezierCurveTo(212, 645, 290, 425, 540, 196);
+      c.closePath();
+    }
+
+    // 水滴外陰影與漸層填色
+    ctx.save();
+    ctx.shadowColor = 'rgba(2, 132, 199, 0.55)';
+    ctx.shadowBlur = 38;
+    ctx.shadowOffsetY = 16;
+    traceDropPath(ctx);
+    const dropGrad = ctx.createLinearGradient(0, 200, 0, 910);
+    dropGrad.addColorStop(0, '#e0f2fe');
+    dropGrad.addColorStop(0.48, '#7dd3fc');
+    dropGrad.addColorStop(1, '#0284c7');
+    ctx.fillStyle = dropGrad;
+    ctx.fill();
+    ctx.restore();
+
+    // 水滴內部高光與白色立體外框
+    ctx.save();
+    traceDropPath(ctx);
+    ctx.clip();
+
+    // 水滴內部柔光雲紋點綴
+    const innerGlow = ctx.createRadialGradient(540, 440, 20, 540, 440, 320);
+    innerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.55)');
+    innerGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = innerGlow;
+    ctx.fillRect(200, 190, 680, 740);
+    ctx.restore();
+
+    ctx.save();
+    traceDropPath(ctx);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+
+    // 5. 水滴卡內：掛位標籤膠囊（精準置中）
+    ctx.save();
+    ctx.font = `bold 22px ${SERIF_FONT}`;
+    const slotBadgeText = `❖ ${slotLabel} ❖`;
+    const slotBadgeW = Math.max(250, Math.ceil(ctx.measureText(slotBadgeText).width) + 52);
+    const slotBadgeH = 44;
+    const slotBadgeX = (size - slotBadgeW) / 2;
+    const slotBadgeY = 282;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+    ctx.strokeStyle = 'rgba(12, 74, 110, 0.18)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(slotBadgeX, slotBadgeY, slotBadgeW, slotBadgeH, slotBadgeH / 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#0c4a6e';
+    drawCenteredText(ctx, slotBadgeText, size / 2, slotBadgeY + slotBadgeH / 2);
+    ctx.restore();
+
+    // 6. 水滴卡內：可愛雙中 Q 版土地公插圖（向量放大繪製）
+    ctx.save();
+    ctx.translate(540, 440);
+    ctx.scale(2.25, 2.25);
+    ctx.translate(-60, -52);
+
+    // 官帽左右帽翅
+    ctx.fillStyle = '#1d4ed8';
+    ctx.beginPath();
+    ctx.roundRect(14, 34, 22, 10, 5);
+    ctx.roundRect(84, 34, 22, 10, 5);
+    ctx.fill();
+
+    // 官帽本體與金邊
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.moveTo(34, 38);
+    ctx.bezierCurveTo(34, 18, 86, 18, 86, 38);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.roundRect(31, 34, 58, 9, 4.5);
+    ctx.fill();
+
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(60, 24, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 圓潤臉龐
+    ctx.fillStyle = '#fde6d0';
+    ctx.beginPath();
+    ctx.arc(60, 57, 21, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 笑瞇瞇彎眼
+    ctx.strokeStyle = '#3f2a1d';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(47, 54);
+    ctx.quadraticCurveTo(51, 49, 55, 54);
+    ctx.moveTo(65, 54);
+    ctx.quadraticCurveTo(69, 49, 73, 54);
+    ctx.stroke();
+
+    // 腮紅
+    ctx.fillStyle = 'rgba(253, 164, 175, 0.85)';
+    ctx.beginPath();
+    ctx.arc(44, 60, 3.6, 0, Math.PI * 2);
+    ctx.arc(76, 60, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 雪白長鬍鬚與微笑小嘴
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(40, 65);
+    ctx.quadraticCurveTo(60, 95, 80, 65);
+    ctx.quadraticCurveTo(68, 62, 60, 64);
+    ctx.quadraticCurveTo(52, 62, 40, 65);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(55, 61);
+    ctx.quadraticCurveTo(60, 66, 65, 61);
+    ctx.stroke();
+    ctx.restore();
+
+    // 7. 水滴卡內：祈福人與祈福心願文字框
+    ctx.save();
+    const wishBoxX = 310;
+    const wishBoxY = 548;
+    const wishBoxW = 460;
+    const wishBoxH = 236;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = 'rgba(12, 74, 110, 0.18)';
+    ctx.shadowBlur = 16;
+    ctx.beginPath();
+    ctx.roundRect(wishBoxX, wishBoxY, wishBoxW, wishBoxH, 28);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 祈福人標籤（置中於上半部標題帶）
+    const displayAuthor = cleanName ? `祈福人：${cleanName}` : '誠心祈願';
+    ctx.fillStyle = '#0369a1';
+    ctx.font = `bold 24px ${SERIF_FONT}`;
+    drawCenteredText(ctx, displayAuthor, size / 2, 582);
+
+    // 細分隔線
+    ctx.strokeStyle = 'rgba(2, 132, 199, 0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(360, 610);
+    ctx.lineTo(720, 610);
+    ctx.stroke();
+
+    // 祈福心願多行自動換行排版（全採用思源宋體襯線字體並精準置中）
+    const fontSize = cleanWish.length > 28 ? 27 : cleanWish.length > 16 ? 31 : 35;
+    ctx.font = `bold ${fontSize}px ${SERIF_FONT}`;
+    ctx.fillStyle = '#082f49';
+
+    const maxLineWidth = 408;
+    const lines = [];
+    let currentLine = '';
+    for (const ch of cleanWish) {
+      const testLine = currentLine + ch;
+      if (ctx.measureText(testLine).width > maxLineWidth && currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = ch;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    const displayLines = lines.slice(0, 4);
+    const lineHeight = fontSize * 1.38;
+    const contentCenterY = (610 + (wishBoxY + wishBoxH)) / 2;
+    const startY = contentCenterY - ((displayLines.length - 1) * lineHeight) / 2;
+
+    displayLines.forEach((lineText, idx) => {
+      drawCenteredText(ctx, lineText, size / 2, startY + idx * lineHeight);
+    });
+    ctx.restore();
+
+    // 8. 水滴卡底部品牌字樣
+    ctx.save();
+    ctx.fillStyle = '#f0f9ff';
+    ctx.font = `bold 24px ${SERIF_FONT}`;
+    ctx.shadowColor = 'rgba(8, 47, 73, 0.55)';
+    ctx.shadowBlur = 6;
+    drawCenteredText(ctx, 'SXHS 蔴竹坑福德祠', size / 2, 838);
+    ctx.restore();
+
+    // 9. 底部對聯、朱印與日期戳記（整體水平與垂直精準置中）
+    ctx.save();
+    const coupletText = '「福添沾厚澤・神佑慶長春」';
+    ctx.font = `bold 27px ${SERIF_FONT}`;
+    const coupletW = ctx.measureText(coupletText).width;
+    const sealSize = 56;
+    const gapBetween = 16;
+    const groupTotalW = coupletW + gapBetween + sealSize;
+    const groupStartX = (size - groupTotalW) / 2;
+    const rowCenterY = 954;
+
+    // 繪製對聯（與方印同高置中）
+    ctx.fillStyle = '#fde68a';
+    drawCenteredText(ctx, coupletText, groupStartX + coupletW / 2, rowCenterY);
+
+    // 繪製朱紅「福德正神」方印（四字象限精準對稱置中）
+    const sealX = groupStartX + coupletW + gapBetween;
+    const sealY = rowCenterY - sealSize / 2;
+    const sealCenterX = sealX + sealSize / 2;
+    const sealCenterY = rowCenterY;
+
+    ctx.fillStyle = '#b91c1c';
+    ctx.strokeStyle = '#fca5a5';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(sealX, sealY, sealSize, sealSize, 8);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff5f5';
+    ctx.font = `bold 19px ${SERIF_FONT}`;
+    const quadOffset = 12.5;
+    drawCenteredText(ctx, '福', sealCenterX - quadOffset, sealCenterY - quadOffset);
+    drawCenteredText(ctx, '德', sealCenterX + quadOffset, sealCenterY - quadOffset);
+    drawCenteredText(ctx, '正', sealCenterX - quadOffset, sealCenterY + quadOffset);
+    drawCenteredText(ctx, '神', sealCenterX + quadOffset, sealCenterY + quadOffset);
+
+    // 日期與頁尾標記（採用同款襯線字體並置中）
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = `600 20px ${SERIF_FONT}`;
+    drawCenteredText(ctx, `${todayStr} 誠心祈福｜新北市立雙溪高中百年古蹟導覽`, size / 2, 1012);
+    ctx.restore();
+
+    // 觸發下載正方形 PNG
+    const safeTag = (cleanName || cleanWish).replace(/[\\/:*?"<>|\s]/g, '').slice(0, 10) || '祈福卡';
+    const dateTag = new Date().toISOString().slice(0, 10);
+    const filename = `蔴竹坑福德祠_祈福小卡_${safeTag}_${dateTag}.png`;
+
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('已匯出正方形祈福小卡圖片 (1080×1080 PNG)！');
+    }, 'image/png');
+  }
 
   function saveBlessingsToStorage() {
     try {
@@ -517,6 +973,28 @@ document.addEventListener('DOMContentLoaded', () => {
       cardZoomModal.classList.add('hidden');
       showToast('已從祈福牆移除該張祈福卡');
     });
+
+    if (btnExportCardImage) {
+      btnExportCardImage.addEventListener('click', () => {
+        const name = zoomNameInput.value.trim();
+        let wish = zoomWishInput.value.trim();
+        if (!wish && activeZoomSlotIndex !== null) {
+          const slots = Temple3D.getBlessingSlots();
+          const slot = slots[activeZoomSlotIndex];
+          if (slot && slot.isUser && slot.wishText) {
+            wish = slot.wishText;
+          } else {
+            wish = '福添沾厚澤・平安順心';
+          }
+        }
+        const slotLabel = zoomSlotLabel ? zoomSlotLabel.textContent.trim() : '誠心祈福御守';
+        exportSquareBlessingCardImage({
+          name,
+          wish: wish || '福添沾厚澤・平安順心',
+          slotLabel
+        });
+      });
+    }
   }
 
   // ===== 擲筊問事互動 =====

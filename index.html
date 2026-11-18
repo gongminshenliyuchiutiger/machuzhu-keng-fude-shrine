@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>蔴竹坑福德祠3D導覽系統｜新北市立雙溪高中</title>
+  <meta name="description" content="精緻還原新北市立雙溪高中校園內的百年古蹟「蔴竹坑福德祠」，透過互動式 3D 導覽探索光緒十八年七面式石造小土地公廟的建築之美與校園守護故事。" />
+
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- 載入畫面 -->
+  <div id="loader-overlay" class="loader-overlay">
+    <div class="loader-card">
+      <div class="loader-icon">
+        <i class="fa-solid fa-torii-gate fa-bounce"></i>
+      </div>
+      <h2>蔴竹坑福德祠 3D 導覽</h2>
+      <p>正在建構光緒十八年石造古蹟與雙溪高中校園場景...</p>
+      <div class="loader-bar-wrap">
+        <div id="loader-bar" class="loader-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3D 畫布容器 -->
+  <div id="canvas-container"></div>
+
+  <!-- 3D 空間熱點標記層 -->
+  <div id="hotspots-layer" class="hotspots-layer"></div>
+
+  <!-- 頂部導覽列 -->
+  <header class="top-header">
+    <div class="brand-box">
+      <div class="brand-badge">
+        <i class="fa-solid fa-gopuram"></i>
+      </div>
+      <div class="brand-text">
+        <h1>蔴竹坑福德祠</h1>
+        <span class="brand-sub">
+          <i class="fa-solid fa-school"></i> 新北市立雙溪高中｜光緒十八年 (1892)
+        </span>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button id="btn-bwei" class="action-btn highlight-gold" title="擲筊問事">
+        <span class="bwei-icon-pair" aria-hidden="true"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-moon flip"></i></span>
+        <span class="btn-label">擲筊問事</span>
+      </button>
+      <button id="btn-offerings" class="action-btn" title="敬備供品">
+        <i class="fa-solid fa-gift"></i>
+        <span class="btn-label">敬備供品</span>
+      </button>
+      <button id="btn-pray" class="action-btn highlight" title="線上祈福">
+        <i class="fa-solid fa-hands-praying"></i>
+        <span class="btn-label">線上祈福</span>
+      </button>
+      <button id="btn-wall-manage" class="action-btn icon-btn" title="祈福卡牆管理">
+        <i class="fa-solid fa-table-cells"></i>
+      </button>
+      <button id="btn-auto-tour" class="action-btn icon-btn" title="自動導覽">
+        <i class="fa-solid fa-route"></i>
+      </button>
+      <button id="btn-toggle-hotspots" class="action-btn icon-btn" title="顯示/隱藏導覽點">
+        <i class="fa-solid fa-location-dot"></i>
+      </button>
+      <button id="btn-day-night" class="action-btn icon-btn" title="切換日夜光影">
+        <i class="fa-solid fa-sun"></i>
+      </button>
+      <button id="btn-info-modal" class="action-btn icon-btn" title="歷史沿革與操作說明">
+        <i class="fa-solid fa-circle-info"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- 導覽解說卡片（預設可收合） -->
+  <aside id="info-panel" class="info-panel hidden">
+    <div class="info-panel-header">
+      <div class="info-title-wrap">
+        <i id="info-icon" class="fa-solid fa-landmark"></i>
+        <h2 id="info-title">蔴竹坑福德祠</h2>
+      </div>
+      <button id="btn-close-info" class="icon-only-btn" title="關閉解說">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="info-badge-row" id="info-badges"></div>
+    <div id="info-content" class="info-content"></div>
+    <div class="info-panel-footer">
+      <button id="btn-prev-spot" class="nav-spot-btn">
+        <i class="fa-solid fa-chevron-left"></i> 上一個
+      </button>
+      <span id="spot-counter" class="spot-counter">1 / 6</span>
+      <button id="btn-next-spot" class="nav-spot-btn">
+        下一個 <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- 視角快速切換列 -->
+  <nav class="camera-dock" aria-label="3D 視角切換">
+    <button class="dock-btn active" data-spot="0">
+      <i class="fa-solid fa-eye"></i>
+      <span>全景概覽</span>
+    </button>
+    <button class="dock-btn" data-spot="1">
+      <i class="fa-solid fa-archway"></i>
+      <span>百年石廟</span>
+    </button>
+    <button class="dock-btn" data-spot="2">
+      <i class="fa-solid fa-place-of-worship"></i>
+      <span>神龕內部</span>
+    </button>
+    <button class="dock-btn" data-spot="3">
+      <i class="fa-solid fa-fire-flame-curved"></i>
+      <span>天公爐供桌</span>
+    </button>
+    <button class="dock-btn" data-spot="4">
+      <i class="fa-solid fa-tags"></i>
+      <span>祈福卡牆</span>
+    </button>
+    <button class="dock-btn" data-spot="5">
+      <i class="fa-solid fa-scroll"></i>
+      <span>感恩碑金爐</span>
+    </button>
+  </nav>
+
+  <!-- 操作提示條（手機與桌機自動適應） -->
+  <div id="controls-hint" class="controls-hint">
+    <span><i class="fa-solid fa-computer-mouse"></i> 拖曳旋轉</span>
+    <span><i class="fa-solid fa-magnifying-glass-plus"></i> 滾輪縮放</span>
+    <span><i class="fa-solid fa-arrows-up-down-left-right"></i> 右鍵平移</span>
+    <button id="btn-close-hint" class="close-hint-btn" title="隱藏提示">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+
+  <!-- 線上祈福彈窗 -->
+  <div id="pray-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-hands-praying"></i> 向雙中土地公誠心祈福</h3>
+        <button id="btn-close-pray" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          寫下您的心願，誠心祈求「蔴竹坑福德祠」土地公與土地婆庇佑！送出後將在 3D 祈福卡牆掛上您的專屬水滴祈福卡，並於天公爐升起祈福星火。
+        </p>
+        <div class="preset-wishes">
+          <button type="button" class="wish-chip" data-wish="金榜題名・學業進步">
+            <i class="fa-solid fa-graduation-cap"></i> 學業進步
+          </button>
+          <button type="button" class="wish-chip" data-wish="身體健康・萬事順遂">
+            <i class="fa-solid fa-heart-pulse"></i> 健康順遂
+          </button>
+          <button type="button" class="wish-chip" data-wish="闔家平安・吉祥如意">
+            <i class="fa-solid fa-shield-heart"></i> 平安吉祥
+          </button>
+          <button type="button" class="wish-chip" data-wish="貴人相助・人際良緣">
+            <i class="fa-solid fa-heart"></i> 人際良緣
+          </button>
+          <button type="button" class="wish-chip" data-wish="步步高升・事業有成">
+            <i class="fa-solid fa-briefcase"></i> 事業有成
+          </button>
+          <button type="button" class="wish-chip" data-wish="福添厚澤・財運亨通">
+            <i class="fa-solid fa-coins"></i> 財運亨通
+          </button>
+        </div>
+        <div class="form-group">
+          <label for="wish-name"><i class="fa-solid fa-user"></i> 祈福人（選填）</label>
+          <input type="text" id="wish-name" maxlength="12" placeholder="例如：雙中學子" />
+        </div>
+        <div class="form-group">
+          <label for="wish-text"><i class="fa-solid fa-pen-fancy"></i> 祈福心願</label>
+          <textarea id="wish-text" rows="3" maxlength="50" placeholder="請輸入您的心願（例如：祝大家考試順利、健康快樂）"></textarea>
+        </div>
+        <button id="btn-submit-pray" class="submit-pray-btn">
+          <i class="fa-solid fa-paper-plane"></i> 誠心奉香掛卡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 擲筊問事彈窗 -->
+  <div id="bwei-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><span class="bwei-icon-pair" aria-hidden="true"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-moon flip"></i></span> 向雙中土地公擲筊問事</h3>
+        <button id="btn-close-bwei" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          心中默念姓名與所問之事，雙手合十向「蔴竹坑福德祠」土地公與土地婆稟報後，點擊下方擲筊！3D 供桌前也會同步擲出聖筊喔。
+        </p>
+
+        <div class="bwei-stage" id="bwei-stage">
+          <div class="bwei-pair" id="bwei-pair">
+            <div class="bwei-piece left flat" id="bwei-left" title="左筊"></div>
+            <div class="bwei-piece right convex" id="bwei-right" title="右筊"></div>
+          </div>
+          <div class="bwei-result-box" id="bwei-result-box">
+            <span class="bwei-badge ready" id="bwei-badge">
+              <i class="fa-solid fa-hands-praying"></i> 準備擲筊
+            </span>
+            <p class="bwei-fortune" id="bwei-fortune">請靜心默念問題後，按下「誠心擲筊」。</p>
+          </div>
+        </div>
+
+        <div class="bwei-stats">
+          <span><i class="fa-solid fa-award"></i> 聖筊累計：<strong id="bwei-sheng-count">0</strong></span>
+          <span><i class="fa-solid fa-fire"></i> 連勝紀錄：<strong id="bwei-streak-count">0</strong></span>
+        </div>
+
+        <button id="btn-throw-bwei" class="submit-pray-btn gold-btn">
+          <span class="bwei-icon-pair" aria-hidden="true"><i class="fa-solid fa-moon"></i><i class="fa-solid fa-moon flip"></i></span> 誠心擲筊
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 敬備供品彈窗 -->
+  <div id="offerings-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-gift"></i> 敬備供品</h3>
+        <button id="btn-close-offerings" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          點擊下方供品即可擺上 3D 白色磁磚供桌（可複選多種供品），向土地公與土地婆表達感恩與敬意！
+        </p>
+        <div class="offering-grid" id="offering-grid">
+          <button type="button" class="offering-card active" data-offering="wang">
+            <i class="fa-solid fa-cookie-bite"></i>
+            <strong>旺旺大禮包</strong>
+            <span>運動會祈晴必備</span>
+          </button>
+          <button type="button" class="offering-card" data-offering="mochi">
+            <i class="fa-solid fa-circle-dot"></i>
+            <strong>花生麻糬</strong>
+            <span>黏錢招財好運來</span>
+          </button>
+          <button type="button" class="offering-card" data-offering="peach">
+            <i class="fa-solid fa-heart-pulse"></i>
+            <strong>發財壽桃</strong>
+            <span>健康平安添福壽</span>
+          </button>
+          <button type="button" class="offering-card" data-offering="fruit">
+            <i class="fa-solid fa-apple-whole"></i>
+            <strong>平安鮮果盤</strong>
+            <span>蘋果橘子大吉大利</span>
+          </button>
+          <button type="button" class="offering-card" data-offering="tea">
+            <i class="fa-solid fa-mug-hot"></i>
+            <strong>暖心烏龍茶</strong>
+            <span>三杯清茶敬神明</span>
+          </button>
+          <button type="button" class="offering-card" data-offering="pineapple">
+            <i class="fa-solid fa-sun"></i>
+            <strong>翠玉鳳梨</strong>
+            <span>好運旺旺來</span>
+          </button>
+        </div>
+        <div class="offering-footer-actions">
+          <button type="button" id="btn-clear-offerings" class="secondary-btn">
+            <i class="fa-solid fa-broom"></i> 收起供品
+          </button>
+          <button type="button" id="btn-all-offerings" class="submit-pray-btn">
+            <i class="fa-solid fa-sparkles"></i> 澎湃全擺上
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 祈福卡牆管理彈窗（拖曳換位、點開放大、匯出匯入） -->
+  <div id="wall-modal" class="modal-backdrop hidden">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-table-cells"></i> 祈福卡牆總覽與管理</h3>
+        <button id="btn-close-wall" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          點擊任一祈福卡可<strong>放大檢視／編輯／刪除</strong>；桌機可直接<strong>拖曳卡片更換位置</strong>，手機可點選「換位模式」依序點兩格互換，3D 祈福牆會即時同步！
+        </p>
+        <div class="wall-toolbar">
+          <button type="button" id="btn-toggle-swap" class="secondary-btn compact">
+            <i class="fa-solid fa-arrows-left-right"></i> <span id="swap-mode-label">點選換位：關閉</span>
+          </button>
+          <div class="wall-io-group">
+            <button type="button" id="btn-export-wishes" class="secondary-btn compact">
+              <i class="fa-solid fa-file-export"></i> 匯出全部願望
+            </button>
+            <button type="button" id="btn-import-wishes" class="secondary-btn compact">
+              <i class="fa-solid fa-file-import"></i> 匯入願望
+            </button>
+            <input type="file" id="import-wishes-file" accept=".json,application/json" hidden />
+          </div>
+        </div>
+        <div class="wall-grid-wrap">
+          <div id="wall-grid" class="wall-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 單張祈福卡放大檢視／編輯／刪除彈窗 -->
+  <div id="card-zoom-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-magnifying-glass-plus"></i> 祈福卡願望詳情</h3>
+        <button id="btn-close-zoom" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="zoom-card-stage">
+          <div class="zoom-drop-card">
+            <div class="zoom-drop-badge">
+              <i class="fa-solid fa-hands-praying"></i>
+              <span id="zoom-slot-label">第 1 排 第 1 格</span>
+            </div>
+            <!-- 可愛雙中 Q 版土地公插圖 -->
+            <svg class="zoom-tudigong-svg" viewBox="0 0 120 96" aria-label="雙中可愛土地公">
+              <!-- 官帽左右帽翅 -->
+              <rect x="14" y="34" width="22" height="10" rx="5" fill="#1d4ed8" />
+              <rect x="84" y="34" width="22" height="10" rx="5" fill="#1d4ed8" />
+              <!-- 官帽本體與金邊 -->
+              <path d="M34 38 C34 18 86 18 86 38 Z" fill="#dc2626" />
+              <rect x="31" y="34" width="58" height="9" rx="4.5" fill="#facc15" />
+              <circle cx="60" cy="24" r="5" fill="#fde047" />
+              <!-- 圓潤臉龐 -->
+              <circle cx="60" cy="57" r="21" fill="#fde6d0" />
+              <!-- 笑瞇瞇彎眼 -->
+              <path d="M47 54 Q51 49 55 54" fill="none" stroke="#3f2a1d" stroke-width="2.6" stroke-linecap="round" />
+              <path d="M65 54 Q69 49 73 54" fill="none" stroke="#3f2a1d" stroke-width="2.6" stroke-linecap="round" />
+              <!-- 腮紅 -->
+              <circle cx="44" cy="60" r="3.6" fill="#fda4af" opacity="0.85" />
+              <circle cx="76" cy="60" r="3.6" fill="#fda4af" opacity="0.85" />
+              <!-- 微笑小嘴與白長鬍 -->
+              <path d="M40 65 Q60 95 80 65 Q68 62 60 64 Q52 62 40 65 Z" fill="#ffffff" stroke="#e2e8f0" stroke-width="1" />
+              <path d="M55 61 Q60 66 65 61" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <p id="zoom-wish-preview" class="zoom-wish-preview">平安順心</p>
+            <span class="zoom-drop-brand">SXHS 蔴竹坑福德祠</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="zoom-name-input"><i class="fa-solid fa-user"></i> 祈福人（選填）</label>
+          <input type="text" id="zoom-name-input" maxlength="12" placeholder="例如：雙中學子" />
+        </div>
+        <div class="form-group">
+          <label for="zoom-wish-input"><i class="fa-solid fa-pen-fancy"></i> 祈福心願</label>
+          <textarea id="zoom-wish-input" rows="3" maxlength="50" placeholder="請輸入您的祈福心願"></textarea>
+        </div>
+        <div class="offering-footer-actions">
+          <button type="button" id="btn-delete-card" class="secondary-btn danger-btn">
+            <i class="fa-solid fa-trash-can"></i> 刪除此卡
+          </button>
+          <button type="button" id="btn-save-card" class="submit-pray-btn">
+            <i class="fa-solid fa-floppy-disk"></i> 儲存修改
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 關於 / 歷史沿革彈窗 -->
+  <div id="about-modal" class="modal-backdrop hidden">
+    <div class="modal-card large">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-book-open"></i> 感恩的心 — 一甲子的守護</h3>
+        <button id="btn-close-about" class="icon-only-btn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body about-body">
+        <div class="about-section">
+          <h4><i class="fa-solid fa-clock-rotate-left"></i> 建置沿革</h4>
+          <p>
+            雙溪高中校址原是一片耕地，田頭田尾立有石造土地公廟，名為「蔴竹坑福德祠」，建於清光緒十八年（西元 1892 年）壬辰冬月。民國 84 年土地被徵收時，學校認為此祠乃先民文化遺產，具傳承鄉土意識之精神，特將其保留於校園中妥善維護。
+          </p>
+        </div>
+        <div class="about-section">
+          <h4><i class="fa-solid fa-ruler-combined"></i> 七面式石造小土地公廟構造</h4>
+          <ul>
+            <li><strong>格局方位：</strong>坐東向西，堂寬 105 公分、祠高 164 公分、殿深 99 公分。</li>
+            <li><strong>對聯題刻：</strong>橫批「福德祠」，上聯「福添沾厚澤」，下聯「神佑慶長春」，內鐫「福德正神」四字。</li>
+            <li><strong>屋脊特色：</strong>屋脊兩端似燕尾翹起，前屋簷中軸微凹象徵微笑朝天，屋稜為雙數。</li>
+            <li><strong>供奉神尊：</strong>廟內同時供奉石雕土地公與土地婆兩尊神像。</li>
+          </ul>
+        </div>
+        <div class="about-section">
+          <h4><i class="fa-solid fa-hand-holding-heart"></i> 校園守護故事</h4>
+          <p>
+            廟頂遮雨棚由營造商陳朝松先生捐建，金爐由家長章慶名先生捐獻，天公爐（金鼎）則由清潔工賴含笑女士發願捐贈。每逢學校或鄉內舉辦運動會、大型活動，承辦人員必以「旺旺」餅乾祭拜祈求天晴，往往原本陰雨的天氣在活動當天便萬里無雲，成為雙溪高中師生最珍貴的精神支柱。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 祈福成功提示 Toast -->
+  <div id="toast-msg" class="toast-msg hidden">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-text">祈福卡已掛上祈福牆！</span>
+  </div>
+
+  <!-- 左下角可移動吉祥物 -->
+  <div id="mascot-container" class="mascot-container" title="拖曳我移動到任何地方！">
+    <img src="image/LiyuChillGuy.svg" alt="LiyuChillGuy 吉祥物" class="mascot-img" draggable="false" />
+    <div class="mascot-tooltip">
+      <i class="fa-solid fa-arrows-up-down-left-right"></i> 可拖曳移動
+    </div>
+  </div>
+
+  <!-- 頁尾：FB粉絲專頁在版權上方 -->
+  <footer class="site-footer">
+    <div class="footer-fb">
+      <a href="https://www.facebook.com/happyliyuchilltiger/" target="_blank" rel="noopener noreferrer" class="fb-link">
+        <i class="fa-brands fa-facebook"></i>
+        <span>快樂鯉魚秋老虎</span>
+      </a>
+    </div>
+    <div class="footer-copyright">
+      Copyright &copy; Liyuchiutiger Gongminshen
+    </div>
+  </footer>
+
+  <!-- Three.js & OrbitControls (支援本地雙擊與伺服器模式) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script src="js/textures.js"></script>
+  <script src="js/temple3d.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
